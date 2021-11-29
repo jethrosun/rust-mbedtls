@@ -27,6 +27,7 @@ impl super::BuildConfig {
         {
             println!("cargo:rustc-link-lib=gcc");
             cmk.cflag("-fno-builtin")
+                .cflag("-U_FORTIFY_SOURCE")
                 .cflag("-D_FORTIFY_SOURCE=0")
                 .cflag("-fno-stack-protector");
         }
