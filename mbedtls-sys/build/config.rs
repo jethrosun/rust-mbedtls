@@ -32,21 +32,29 @@ pub type CDefine = (&'static str, Macro);
 pub const PREFIX: &'static str = r#"
 #ifndef MBEDTLS_CONFIG_H
 #define MBEDTLS_CONFIG_H
+
 #if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_DEPRECATE)
 #define _CRT_SECURE_NO_DEPRECATE 1
 #endif
 "#;
 
 /*
+
 DEFAULT_DEFINES was generated using the following script
+
 #!/usr/bin/python
+
 import re
+
 simple_define = re.compile(r'(.*)#define (MBEDTLS_[A-Z0-9_]+)$')
 define_with_default = re.compile(r'.*#define (MBEDTLS_[A-Z0-9_]+) +([0-9A-Za-z_]+)')
+
 def format(macro, state):
     return "    (\"%s\", %s)," % (macro, state.rjust(49 - len(macro) + len(state)))
+
 for line in open('vendor/include/mbedtls/config.h').readlines():
     match = simple_define.match(line)
+
     if match:
         state = "Undefined" if match.group(1).strip() == '//' else "Defined"
         print format(match.group(2), state)
@@ -124,6 +132,7 @@ const DEFAULT_DEFINES: &'static [CDefine] = &[
     ("MBEDTLS_ECDSA_SIGN_ALT",                            Undefined),
     ("MBEDTLS_ECDSA_GENKEY_ALT",                          Undefined),
     ("MBEDTLS_ECP_INTERNAL_ALT",                          Undefined),
+    ("MBEDTLS_ECP_NO_FALLBACK",                           Undefined),
     ("MBEDTLS_ECP_RANDOMIZE_JAC_ALT",                     Undefined),
     ("MBEDTLS_ECP_ADD_MIXED_ALT",                         Undefined),
     ("MBEDTLS_ECP_DOUBLE_JAC_ALT",                        Undefined),
@@ -194,7 +203,9 @@ const DEFAULT_DEFINES: &'static [CDefine] = &[
     ("MBEDTLS_PK_RSA_ALT_SUPPORT",                        Defined),
     ("MBEDTLS_PKCS1_V15",                                 Defined),
     ("MBEDTLS_PKCS1_V21",                                 Defined),
+    ("MBEDTLS_PSA_CRYPTO_CLIENT",                         Undefined),
     ("MBEDTLS_PSA_CRYPTO_DRIVERS",                        Undefined),
+    ("MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG",                   Undefined),
     ("MBEDTLS_PSA_CRYPTO_SPM",                            Undefined),
     ("MBEDTLS_PSA_INJECT_ENTROPY",                        Undefined),
     ("MBEDTLS_RSA_NO_CRT",                                Undefined),
@@ -366,6 +377,8 @@ const DEFAULT_DEFINES: &'static [CDefine] = &[
     ("MBEDTLS_PLATFORM_VSNPRINTF_MACRO",                  Undefined), // default: vsnprintf
     ("MBEDTLS_PLATFORM_NV_SEED_READ_MACRO",               Undefined), // default: mbedtls_platform_std_nv_seed_read
     ("MBEDTLS_PLATFORM_NV_SEED_WRITE_MACRO",              Undefined), // default: mbedtls_platform_std_nv_seed_write
+    ("MBEDTLS_PSA_HMAC_DRBG_MD_TYPE",                     Undefined), // default: see config.h
+    ("MBEDTLS_PSA_KEY_SLOT_COUNT",                        Undefined), // default: 32
     ("MBEDTLS_SSL_CACHE_DEFAULT_TIMEOUT",                 Undefined), // default: 86400
     ("MBEDTLS_SSL_CACHE_DEFAULT_MAX_ENTRIES",             Undefined), // default: 50
     ("MBEDTLS_SSL_MAX_CONTENT_LEN",                       Undefined), // default: 16384

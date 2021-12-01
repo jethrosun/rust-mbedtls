@@ -6,7 +6,7 @@
  * option. This file may not be copied, modified, or distributed except
  * according to those terms. */
 
-use crate::have_feature;
+use crate::features::FEATURES;
 
 /* This list has been generated from a include/mbedtls/ directory as follows:
  *
@@ -18,8 +18,8 @@ use crate::have_feature;
  *
  * ls -f1 $( \
  *  ( \
- *      grep '^#include' *|grep -v '<'|grep -v MBEDTLS_|sed 's/:#include//;s/"//g'|grep -v _alt.h; \
- *      ls *.h|awk '{print $1 " " $1}' \
+ *      grep '^#include' *|grep -v '<'|grep -v MBEDTLS_|sed 's/:#include//;s/"//g'|sed 's#mbedtls/##g'| egrep -v ' (psa/crypto.h|psa/crypto_config.h|everest/everest.h|zlib.h|.*_alt.h)$'; \
+ *       ls *.h|awk '{print $1 " " $1}' \
  *  )|tsort|tac| \
  *  egrep -v '^(compat-1.3.h|certs.h|config.h|check_config.h)$' \
  * )
@@ -27,6 +27,7 @@ use crate::have_feature;
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
 pub const ORDERED: &'static [(Option<&'static str>, &'static str)] = &[
+    (None,                 "config_psa.h"),
     (None,                 "bignum.h"),
     (None,                 "md.h"),
     (Some("threading"),    "threading.h"),
@@ -40,11 +41,14 @@ pub const ORDERED: &'static [(Option<&'static str>, &'static str)] = &[
     (None,                 "x509.h"),
     (None,                 "cipher.h"),
     (None,                 "x509_crl.h"),
+    (None,                 "aes.h"),
     (None,                 "ssl_ciphersuites.h"),
     (None,                 "x509_crt.h"),
     (None,                 "dhm.h"),
     (None,                 "ecdh.h"),
     (None,                 "oid.h"),
+    (None,                 "ctr_drbg.h"),
+    (None,                 "hmac_drbg.h"),
     (None,                 "ssl.h"),
     (None,                 "md5.h"),
     (None,                 "sha1.h"),
@@ -52,7 +56,6 @@ pub const ORDERED: &'static [(Option<&'static str>, &'static str)] = &[
     (None,                 "sha512.h"),
     (None,                 "ecjpake.h"),
     (None,                 "psa_util.h"),
-    (None,                 "aes.h"),
     (None,                 "net_sockets.h"),
     (None,                 "havege.h"),
     (None,                 "poly1305.h"),
@@ -80,7 +83,6 @@ pub const ORDERED: &'static [(Option<&'static str>, &'static str)] = &[
     (None,                 "md_internal.h"),
     (None,                 "md4.h"),
     (None,                 "md2.h"),
-    (None,                 "hmac_drbg.h"),
     (None,                 "hkdf.h"),
     (None,                 "gcm.h"),
     (None,                 "error.h"),
@@ -89,7 +91,6 @@ pub const ORDERED: &'static [(Option<&'static str>, &'static str)] = &[
     (None,                 "ecp_internal.h"),
     (None,                 "des.h"),
     (None,                 "debug.h"),
-    (None,                 "ctr_drbg.h"),
     (None,                 "cmac.h"),
     (None,                 "cipher_internal.h"),
     (None,                 "chachapoly.h"),
@@ -106,7 +107,7 @@ pub const ORDERED: &'static [(Option<&'static str>, &'static str)] = &[
 
 pub fn enabled_ordered() -> Box<dyn Iterator<Item = &'static str>> {
     Box::new(ORDERED.iter().filter_map(|&(feat, h)| {
-        if feat.map(have_feature).unwrap_or(true) {
+        if feat.map_or(true, |feat| FEATURES.have_feature(feat)) {
             Some(h)
         } else {
             None
