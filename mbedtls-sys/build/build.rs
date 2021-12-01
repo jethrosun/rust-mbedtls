@@ -8,47 +8,41 @@
 
 extern crate bindgen;
 extern crate cmake;
+#[macro_use]
+extern crate lazy_static;
 
 mod config;
+mod features;
 mod headers;
 #[path = "bindgen.rs"]
 mod mod_bindgen;
 #[path = "cmake.rs"]
 mod mod_cmake;
 
-use std::collections::HashMap;
+use features::FEATURES;
 use std::env;
 use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-pub fn have_feature(feature: &'static str) -> bool {
-    env::var_os(
-        format!("CARGO_FEATURE_{}", feature)
-            .to_uppercase()
-            .replace("-", "_"),
-    )
-    .is_some()
-}
-
 struct BuildConfig {
     out_dir: PathBuf,
     mbedtls_src: PathBuf,
+    mbedtls_include: PathBuf,
     config_h: PathBuf,
+    cflags: Vec<String>,
 }
 
 impl BuildConfig {
     fn create_config_h(&self) {
-        let target = env::var("TARGET").unwrap();
-        let mut defines = config::DEFAULT_DEFINES
-            .iter()
-            .cloned()
-            .collect::<HashMap<_, _>>();
+        let mut defines = config::default_defines();
         for &(feat, def) in config::FEATURE_DEFINES {
-            if (feat == "std") && (target == "x86_64-fortanix-unknown-sgx") {
-                continue;
+            if FEATURES.have_feature(feat) {
+                defines.insert(def.0, def.1);
             }
-            if have_feature(feat) {
+        }
+        for &(feat, comp, def) in config::PLATFORM_DEFINES {
+            if FEATURES.have_platform_component(feat, comp) {
                 defines.insert(def.0, def.1);
             }
         }
@@ -59,11 +53,14 @@ impl BuildConfig {
                 for (name, def) in defines {
                     f.write_all(def.define(name).as_bytes())?;
                 }
-                if have_feature("custom_printf") {
+                if FEATURES.have_feature("custom_printf") {
                     writeln!(f, "int mbedtls_printf(const char *format, ...);")?;
                 }
-                if have_feature("custom_threading") {
+                if FEATURES.have_platform_component("threading", "custom") {
                     writeln!(f, "typedef void* mbedtls_threading_mutex_t;")?;
+                }
+                if FEATURES.have_platform_component("time", "custom") {
+                    writeln!(f, "long long mbedtls_time(long long*);")?;
                 }
                 f.write_all(config::SUFFIX.as_bytes())
             })
@@ -92,17 +89,33 @@ impl BuildConfig {
             );
         }
     }
+
+    fn new() -> Self {
+        let out_dir = PathBuf::from(env::var_os("OUT_DIR").expect("OUT_DIR environment not set?"));
+        let config_h = out_dir.join("config.h");
+        let mbedtls_src =
+            PathBuf::from(env::var("RUST_MBEDTLS_SYS_SOURCE").unwrap_or("vendor".to_owned()));
+        let mbedtls_include = mbedtls_src.join("include");
+
+        let mut cflags = vec![];
+        if FEATURES.have_platform_component("c_compiler", "freestanding") {
+            cflags.push("-fno-builtin".into());
+            cflags.push("-D_FORTIFY_SOURCE=0".into());
+            cflags.push("-fno-stack-protector".into());
+        }
+
+        BuildConfig {
+            config_h,
+            out_dir,
+            mbedtls_src,
+            mbedtls_include,
+            cflags,
+        }
+    }
 }
 
 fn main() {
-    let out_dir = PathBuf::from(env::var_os("OUT_DIR").expect("OUT_DIR environment not set?"));
-    let src = PathBuf::from(env::var("RUST_MBEDTLS_SYS_SOURCE").unwrap_or("vendor".to_owned()));
-    let cfg = BuildConfig {
-        config_h: out_dir.join("config.h"),
-        out_dir: out_dir,
-        mbedtls_src: src,
-    };
-
+    let cfg = BuildConfig::new();
     cfg.create_config_h();
     cfg.print_rerun_files();
     cfg.cmake();
