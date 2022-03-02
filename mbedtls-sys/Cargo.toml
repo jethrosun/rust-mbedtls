@@ -34,7 +34,7 @@ lazy_static = "=1.4"
 syn = { version = "=1.0.64", features = ["full", "visit"] }
 quote = "=1.0.9"
 libloading = "=0.6.4"
-
+log = "=0.4.13"
 
 [features]
 # If you use mbedtls-sys in a no_std configuration, you need to provide your
