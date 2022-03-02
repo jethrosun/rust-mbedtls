@@ -36,7 +36,7 @@ rs-libc = "=0.2.0"
 chrono = "=0.4"
 
 [dependencies.mbedtls-sys-auto]
-version = "=2.25.0"
+version = "=2.26.1"
 default-features = false
 features = ["custom_printf", "trusted_cert_callback", "threading"]
 path = "../mbedtls-sys"
